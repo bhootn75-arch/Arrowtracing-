@@ -3,6 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#01579b">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="एरो ट्रेसिंग">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
     <title>बच्चों के लिए स्मार्ट एरो ट्रेसिंग ऐप</title>
     <style>
         * {
@@ -2091,12 +2100,22 @@
             </div>
         </div>
 
+        <div class="settings-size-block" id="drawBrushSizeBlock">
+            <div class="settings-size-head">
+                <span id="settingsStrokeLabel">🖌️ ड्रॉ ब्रश साइज़ (Draw Size)</span>
+                <span id="drawBrushSizeVal">0.55×</span>
+            </div>
+            <input type="range" id="drawBrushSizeRange" min="0.10" max="1.60" step="0.05" value="0.55" title="ड्रॉ करने वाले ब्रश/कैनवास की मोटाई" aria-label="Draw brush size">
+            <div class="settings-size-ends"><span>बारीक</span><span>नॉर्मल</span><span>मोटा</span></div>
+        </div>
         <div class="settings-row">
-            <label id="settingsStrokeLabel" for="strokeWidthSelect">लाइन मोटाई</label>
+            <label for="strokeWidthSelect">✏️ ड्रॉ मोटाई प्रीसेट</label>
             <select id="strokeWidthSelect" title="ड्रॉ लाइन की मोटाई" aria-label="Stroke width">
+                <option value="0.25">बहुत पतली</option>
                 <option value="0.4">पतली</option>
                 <option value="0.55" selected>नॉर्मल</option>
                 <option value="0.75">मोटी</option>
+                <option value="1.0">पूरी भरी (Full)</option>
             </select>
         </div>
         <div class="settings-row">
@@ -2186,9 +2205,6 @@
         <button class="btn-undo" id="undoStrokeBtn">↩️ पिछला स्ट्रोक हटाएं</button>
         <button class="btn-clear" id="clearEditBtn">🗑️ सब मिटाएं</button>
         <button class="btn-default" id="resetDefaultBtn">🔄 डिफ़ॉल्ट</button>
-        <button class="btn-io" id="exportBtn" title="बैकअप डाउनलोड करें">📥 बैकअप</button>
-        <button class="btn-io" id="importBtn" title="फाइल लोड करें">📤 लोड</button>
-        <input type="file" id="importFile" style="display:none" accept=".json">
         <button class="btn-cancel" id="cancelEditBtn">❌ बाहर निकलें</button>
     </div>
 
@@ -2665,7 +2681,7 @@
       const byId = {homePhotoLabel:'home',speakBtn:'speak',clearBtn:'reset',rewriteBtn:'rewrite',editModeBtn:'edit',hideToolsBtn:'hide',
         charSelect:'charTitle',prevBtn:'prev',nextBtn:'next',
         saveEditBtn:'save',undoStrokeBtn:'undo',clearEditBtn:'clear',resetDefaultBtn:'defaults',
-        exportBtn:'backup',importBtn:'load',cancelEditBtn:'exit'};
+        cancelEditBtn:'exit'};
       Object.entries(byId).forEach(([id,key]) => {
         const el=document.getElementById(id);
         if(!el || !t[key]) return;
@@ -2713,8 +2729,6 @@
       setTitle('soundToggleBtn', tip('साउंड चालू/बंद', 'Sound on/off'));
       setTitle('charNumToggle', tip('वर्ण / संख्या', 'Letters / Numbers'));
       setTitle('fullscreenBtn', tip('फुल स्क्रीन ऑन/ऑफ', 'Fullscreen on/off'));
-      setTitle('exportBtn', tip('बैकअप डाउनलोड करें', 'Download backup'));
-      setTitle('importBtn', tip('फाइल लोड करें', 'Load file'));
       // सेटिंग पैनल — चुनी UI भाषा में
       const st = (uiLabels[uiLanguage] && uiLabels[uiLanguage].settingsTitle) ? uiLabels[uiLanguage] : (uiLabels.en || uiLabels.hi);
       const setT = (id, key) => { const el = document.getElementById(id); if (el && st[key]) el.textContent = st[key]; };
@@ -3313,7 +3327,7 @@ const canvas = document.getElementById('traceCanvas');
         let size = Math.floor(Math.min(VIEW_W, VIEW_H) * (wordMode ? 0.9 : 0.82));
         const probe = document.createElement('canvas').getContext('2d');
         for (let i = 0; i < 24; i++) {
-            probe.font = `${size}px sans-serif`;
+            probe.font = `900 ${size}px sans-serif`;
             const m = probe.measureText(text);
             const w = m.width;
             const h = (m.actualBoundingBoxAscent || size * 0.8) + (m.actualBoundingBoxDescent || size * 0.2);
@@ -3689,7 +3703,7 @@ const canvas = document.getElementById('traceCanvas');
 
         const fontSize = getFontSize(text);
         glyphPx = fontSize;
-        maskCtx.font = `${fontSize}px sans-serif`;
+        maskCtx.font = `900 ${fontSize}px sans-serif`;
         maskCtx.textAlign = 'center';
         maskCtx.textBaseline = 'middle';
         maskCtx.lineJoin = 'round';
@@ -3729,21 +3743,25 @@ const canvas = document.getElementById('traceCanvas');
             document.getElementById('statusText').innerText = editMsg[uiLanguage] || editMsg.en || editMsg.hi;
             if (typeof applyUiLanguage === 'function') applyUiLanguage();
         } else if (typeof isReadingMode === 'function' && isReadingMode()) {
-            // रीडिंग मोड: 3D दिखाओ, जगाओ, उच्चारण
+            // रीडिंग मोड: 3D दिखाओ, जगाओ, उच्चारण + ऑटो ऑन होने पर एक-एक कर सभी वर्ण पार हों
             generatePencilStrokes();
             isCompleted = true;
             celebrateActive = false;
             stopLaserAuto();
             stopAutoGuideDemo();
+            if (typeof stopReadingAuto === 'function') stopReadingAuto();
             try {
                 drawCtx.fillStyle = (typeof getPremiumProgressColor === 'function' ? getPremiumProgressColor() : '#ffb300');
                 drawCtx.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
             } catch (e) {}
-            setStatus('📖 रीडिंग — टैप / अगला: सुनें');
+            setStatus((laserAutoOn || autoGuideOn) ? '📖 ऑटो रीडिंग: एक-एक कर सभी वर्ण चल रहे हैं…' : '📖 रीडिंग — टैप / अगला: सुनें');
             updateRewriteBtn();
             setTimeout(() => {
                 startWakeAnim();
                 if (typeof speakCurrentChar === 'function') speakCurrentChar(true);
+                if (typeof scheduleReadingAutoNext === 'function' && (laserAutoOn || autoGuideOn)) {
+                    scheduleReadingAutoNext();
+                }
             }, 120);
         } else {
             generatePencilStrokes();
@@ -3842,7 +3860,7 @@ const canvas = document.getElementById('traceCanvas');
                 try { document.getElementById('nextBtn').classList.remove('pulse'); } catch (e) {}
                 setupCharacter();
                 // setupCharacter itself schedules startLaserAuto when laserAutoOn
-            }, 1600);
+            }, 2400);
         }
     }
 
@@ -3986,31 +4004,69 @@ const canvas = document.getElementById('traceCanvas');
     }
 
     // हाई-रिज़ॉल्यूशन और पूरी तरह गोल पाइप जैसे सॉफ्ट 3D इंजन (प्रीमियम ग्लो और डार्क ट्रेसिंग इफ़ेक्ट के साथ)
-    function draw3DGlyph(text, fontSize, cx, cy, xf, isChasingOrDrawing) {
-        const tNow = performance.now() * 0.0025;
-        const idleFloatY = (isChasingOrDrawing || (!xf || (!xf.dx && !xf.dy))) ? 0 : Math.sin(tNow) * (fontSize * 0.012);
-        const idleTiltX = (isChasingOrDrawing || (!xf || !xf.skewX)) ? 0 : Math.cos(tNow * 0.7) * 0.014;
+    function getTraceBrushWidth() {
+        const sw = (typeof strokeWidthMul === 'number') ? strokeWidthMul : 0.55;
+        const thickBoost = (typeof bigMode === 'function' && bigMode() && typeof wordThick === 'number' && wordThick > 1) ? wordThick : 1;
+        return unitPx() * 0.16 * sw * thickBoost;
+    }
 
+    function fillGlyphFace(c, text, fontSize, P, isCompletedState) {
+        if (P.kind === 'rainbow') {
+            const g = c.createLinearGradient(-fontSize * 0.48, -fontSize * 0.4, fontSize * 0.48, fontSize * 0.4);
+            g.addColorStop(0.0, '#ff1744');
+            g.addColorStop(0.22, '#ff9100');
+            g.addColorStop(0.45, '#ffea00');
+            g.addColorStop(0.68, '#00e676');
+            g.addColorStop(0.85, '#2979ff');
+            g.addColorStop(1.0, '#d500f9');
+            c.fillStyle = g;
+        } else {
+            const useCustomUserColor = P.user && P.user !== '#ff5fa2' && P.style === 'balloon';
+            if (useCustomUserColor) {
+                c.fillStyle = P.user;
+            } else {
+                const faceGrad = c.createLinearGradient(0, -fontSize * 0.44, 0, fontSize * 0.44);
+                if (isCompletedState) {
+                    faceGrad.addColorStop(0.0, '#ffffff');
+                    faceGrad.addColorStop(0.25, P.faceTop || '#ff94c2');
+                    faceGrad.addColorStop(0.65, P.faceMid || '#ff5fa2');
+                    faceGrad.addColorStop(1.0, P.faceBot || '#e02170');
+                } else {
+                    faceGrad.addColorStop(0.0, P.faceTop || '#ff94c2');
+                    faceGrad.addColorStop(0.5, P.faceMid || '#ff5fa2');
+                    faceGrad.addColorStop(1.0, P.faceBot || '#e02170');
+                }
+                c.fillStyle = faceGrad;
+            }
+        }
+        c.fillText(text, 0, 0);
+        if (typeof bigMode === 'function' && bigMode() && Math.abs(wordThick - 1) >= 0.001) {
+            c.save();
+            c.lineJoin = 'round';
+            c.lineCap = 'round';
+            if (wordThick > 1) {
+                c.strokeStyle = c.fillStyle;
+                c.lineWidth = fontSize * 0.12 * (wordThick - 1);
+                c.strokeText(text, 0, 0);
+            }
+            c.restore();
+        }
+    }
+
+    function draw3DGlyph(text, fontSize, cx, cy, xf, isChasingOrDrawing, showTraceProgress) {
         const scaleX = (typeof bigMode === 'function' && bigMode() ? wordScaleX : 1) * (xf && xf.scale ? xf.scale : 1);
         const scaleY = (typeof bigMode === 'function' && bigMode() ? wordScaleY : 1) * (xf && xf.scale ? xf.scale : 1);
-        const dx = (xf ? (xf.dx || 0) : 0);
-        const dy = (xf ? (xf.dy || 0) : 0) + idleFloatY;
+        const dx = xf ? (xf.dx || 0) : 0;
+        const dy = xf ? (xf.dy || 0) : 0;
         const rot = xf ? (xf.rot || 0) : 0;
-        const skewX = (xf ? (xf.skewX || 0) : 0) + idleTiltX;
+        const skewX = xf ? (xf.skewX || 0) : 0;
         const skewY = xf ? (xf.skewY || 0) : 0;
-        
-        let alpha = xf && xf.alpha != null ? xf.alpha : 1;
-        
-        // कीड़ा का पीछा करते वक्त (Chasing) टेक्स्ट थोड़ा सा डार्क/सॉलिड दिखेगा ताकि लाइन साफ़ दिखे
-        if (isChasingOrDrawing) {
-            alpha = Math.max(alpha, 0.85);
-        } else if (isCompleted) {
-            // पूरा होने के बाद टेक्स्ट और अधिक ब्राइट और जीवंत हो जाएगा
-            alpha = 1.0;
-        }
+        const alpha = xf && xf.alpha != null ? xf.alpha : 1;
 
         const P = getPremiumPalette();
-        
+        const extraW = (typeof bigMode === 'function' && bigMode() && wordThick > 1) ? fontSize * 0.12 * (wordThick - 1) : 0;
+        const borderW = Math.max(3, fontSize * 0.032) + extraW;
+
         const totalDepth = Math.max(6, Math.min(22, fontSize * 0.052));
         const steps = Math.max(16, Math.min(28, Math.floor(totalDepth * 1.4)));
         const maxOx = totalDepth * 0.75;
@@ -4018,79 +4074,102 @@ const canvas = document.getElementById('traceCanvas');
 
         ctx.save();
         ctx.translate(cx + dx, cy + dy);
-        ctx.transform(1, skewY, skewX, 1, 0, 0);
-        ctx.rotate(rot);
+        if (skewX || skewY) ctx.transform(1, skewY, skewX, 1, 0, 0);
+        if (rot) ctx.rotate(rot);
         ctx.scale(scaleX, scaleY);
         ctx.globalAlpha = alpha;
-        
+
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
         ctx.miterLimit = 2;
-        
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.font = `900 ${fontSize}px sans-serif`;
         ctx.setLineDash([]);
 
-        // 1. प्रीमियम शैडो (पूरा होने पर ब्राइट ग्लो)
+        // 1. एकसमान रीयल 3D शैडो (कोने-कोने तक परफेक्ट और एक ही सॉलिड शैडो कलर में)
+        const shadowCol = P.depthDark || '#2a150e';
         ctx.save();
-        ctx.shadowColor = isCompleted ? 'rgba(255, 215, 0, 0.6)' : (P.shadow || 'rgba(10, 40, 15, 0.35)');
-        ctx.shadowBlur = isCompleted ? fontSize * 0.15 : fontSize * 0.1;
-        ctx.shadowOffsetX = totalDepth * 0.45;
-        ctx.shadowOffsetY = totalDepth * 0.95;
-        ctx.fillStyle = P.depthDark || '#144518';
+        ctx.shadowColor = isCompleted ? 'rgba(255, 215, 0, 0.6)' : (P.shadow || 'rgba(0, 0, 0, 0.35)');
+        ctx.shadowBlur = isCompleted ? fontSize * 0.15 : fontSize * 0.08;
+        ctx.shadowOffsetX = totalDepth * 0.35;
+        ctx.shadowOffsetY = totalDepth * 0.65;
+        ctx.fillStyle = shadowCol;
+        ctx.strokeStyle = shadowCol;
+        ctx.lineWidth = borderW;
+        ctx.strokeText(text, maxOx, maxOy);
         ctx.fillText(text, maxOx, maxOy);
         ctx.restore();
 
-        // 2. गोल पाइप जैसी डेप्थ शेडिंग
+        // 2. कोने-कोने को पूरा भरने के लिए हर स्टेप पर बॉर्डर की चौड़ाई के साथ एक ही रंग में एक्सट्रूज़न
+        ctx.fillStyle = shadowCol;
+        ctx.strokeStyle = shadowCol;
+        ctx.lineWidth = borderW;
         for (let i = steps; i >= 1; i--) {
             const ratio = i / steps;
-            ctx.fillStyle = (i > steps * 0.6) ? (P.depthDark || '#144518') : (P.depth || '#2e7d32');
-            ctx.globalAlpha = alpha * (0.85 + 0.15 * ratio);
-            ctx.fillText(text, maxOx * ratio, maxOy * ratio);
+            const ox = maxOx * ratio;
+            const oy = maxOy * ratio;
+            ctx.strokeText(text, ox, oy);
+            ctx.fillText(text, ox, oy);
         }
         ctx.globalAlpha = alpha;
 
         // 3. ब्लैक आउटलाइन बॉर्डर
         ctx.save();
-        ctx.lineWidth = Math.max(3, fontSize * 0.032);
+        ctx.lineWidth = borderW;
         ctx.strokeStyle = '#000000';
         ctx.strokeText(text, 0, 0);
         ctx.restore();
 
-        // 4. मुख्य प्रीमियम फेस कलर (पूरा होने पर एक्स्ट्रा ब्राइट ग्रेडिएंट)
-        if (P.kind === 'rainbow') {
-            const g = ctx.createLinearGradient(-fontSize * 0.48, -fontSize * 0.4, fontSize * 0.48, fontSize * 0.4);
-            g.addColorStop(0.0, '#ff1744');
-            g.addColorStop(0.22, '#ff9100');
-            g.addColorStop(0.45, '#ffea00');
-            g.addColorStop(0.68, '#00e676');
-            g.addColorStop(0.85, '#2979ff');
-            g.addColorStop(1.0, '#d500f9');
-            ctx.fillStyle = g;
-        } else {
-            const useCustomUserColor = P.user && P.user !== '#ff5fa2' && P.style === 'balloon';
-            if (useCustomUserColor) {
-                ctx.fillStyle = P.user;
-            } else {
-                const faceGrad = ctx.createLinearGradient(0, -fontSize * 0.44, 0, fontSize * 0.44);
-                if (isCompleted) {
-                    // पूरा होने के बाद ब्राइटनेस और चमक बढ़ाने के लिए रिच हाइलाइट्स
-                    faceGrad.addColorStop(0.0, '#ffffff');
-                    faceGrad.addColorStop(0.3, P.faceTop || '#ff94c2');
-                    faceGrad.addColorStop(0.7, P.faceMid || '#ff5fa2');
-                    faceGrad.addColorStop(1.0, P.faceBot || '#e02170');
-                } else {
-                    faceGrad.addColorStop(0.0, P.faceTop || '#ff94c2');
-                    faceGrad.addColorStop(0.5, P.faceMid || '#ff5fa2');
-                    faceGrad.addColorStop(1.0, P.faceBot || '#e02170');
-                }
-                ctx.fillStyle = faceGrad;
+        // 4. मुख्य वर्ण का बेस फेस
+        ctx.save();
+        if (showTraceProgress && !isCompleted) {
+            // अनट्रेस्ड बेस फेस: हल्का साफ क्रीम ग्रेडिएंट ताकि इसके ऊपर जब ड्रा करें तो असली वर्ण का रंग एकदम परफेक्ट उभर कर दिखे
+            const baseGrad = ctx.createLinearGradient(0, -fontSize * 0.44, 0, fontSize * 0.44);
+            baseGrad.addColorStop(0.0, '#fffaf0');
+            baseGrad.addColorStop(0.5, '#f5e1ce');
+            baseGrad.addColorStop(1.0, '#e6c5a8');
+            ctx.fillStyle = baseGrad;
+            ctx.fillText(text, 0, 0);
+            if (extraW > 0) {
+                ctx.strokeStyle = baseGrad;
+                ctx.lineWidth = extraW;
+                ctx.strokeText(text, 0, 0);
             }
+        } else {
+            fillGlyphFace(ctx, text, fontSize, P, isCompleted);
         }
-        ctx.fillText(text, 0, 0);
+        ctx.restore();
 
         ctx.restore();
+
+        // 5. जब वर्ण के ऊपर ड्रा किया जाए, तो ड्रॉ किया हुआ हिस्सा ठीक उसी वर्ण के आकार और प्रीमियम ग्रेडिएंट में दिखे
+        if (showTraceProgress && !isCompleted) {
+            tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+            tempCtx.save();
+            tempCtx.globalCompositeOperation = 'source-over';
+            tempCtx.translate(cx + dx, cy + dy);
+            if (skewX || skewY) tempCtx.transform(1, skewY, skewX, 1, 0, 0);
+            if (rot) tempCtx.rotate(rot);
+            tempCtx.scale(scaleX, scaleY);
+            tempCtx.lineJoin = 'round';
+            tempCtx.lineCap = 'round';
+            tempCtx.textAlign = 'center';
+            tempCtx.textBaseline = 'middle';
+            tempCtx.font = `900 ${fontSize}px sans-serif`;
+            fillGlyphFace(tempCtx, text, fontSize, P, false);
+            tempCtx.restore();
+
+            tempCtx.save();
+            tempCtx.globalCompositeOperation = 'destination-in';
+            tempCtx.drawImage(drawCanvas, 0, 0);
+            tempCtx.drawImage(maskCanvas, 0, 0);
+            tempCtx.restore();
+
+            ctx.save();
+            ctx.drawImage(tempCanvas, 0, 0);
+            ctx.restore();
+        }
     }
 
     function getPremiumProgressColor() {
@@ -4133,100 +4212,52 @@ const canvas = document.getElementById('traceCanvas');
 
             let celeb = (isCompleted && celebrateActive && !_readMode && typeof getCelebrateTransform === 'function') ? getCelebrateTransform() : null;
             if (isCompleted && !_readMode && !celeb) {
-                celeb = { dx: 0, dy: 0, rot: 0, scale: 1, skewX: 0.015, skewY: 0.008, alpha: 1, t: 1 };
+                celeb = { dx: 0, dy: 0, rot: 0, scale: 1, skewX: 0, skewY: 0, alpha: 1, t: 1 };
             }
 
             let wake = (_readMode && typeof getWakeTransform === 'function') ? getWakeTransform() : null;
             if (_readMode && !wake && typeof getIdleReadingTransform === 'function') {
                 wake = getIdleReadingTransform();
             }
-            const xf3d = celeb || wake;
+            const xf3d = celeb || wake || { scale: 1, rot: 0, dx: 0, dy: 0, skewX: 0, skewY: 0, alpha: 1, t: 0 };
 
-            const use3d = _readMode || isCompleted || ((typeof is3dOn === 'function' ? is3dOn() : true) && celeb) || isChasingOrDrawing;
+            draw3DGlyph(text, fontSize, cx, cy, xf3d, isChasingOrDrawing, !_readMode && !isEditMode);
             
-            if (use3d && typeof draw3DGlyph === 'function') {
-                draw3DGlyph(text, fontSize, cx, cy, xf3d || { scale: 1, rot: 0, dx: 0, dy: 0, skewX: 0.015, skewY: 0.008, alpha: 1, t: 0 }, isChasingOrDrawing);
-                
-                if (celeb && celebrateActive) {
-                    const n = 12;
-                    ctx.save();
-                    for (let i = 0; i < n; i++) {
-                        const a = (i / n) * Math.PI * 2 + (celeb.t || 0) * 6.5;
-                        const rr = (0.15 + 0.12 * Math.sin((celeb.t || 0) * 8 + i)) * Math.min(VIEW_W, VIEW_H) * (1 - (celeb.t || 0) * 0.45);
-                        const px = cx + Math.cos(a) * rr + celeb.dx;
-                        const py = cy + Math.sin(a) * rr * 0.72 + celeb.dy;
-                        const sz = Math.max(1.5, (3.8 + 2.2 * Math.sin((celeb.t || 0) * 12 + i)) * (1 - (celeb.t || 0) * 0.3));
-                        const hue = (i * 35 + (celeb.t || 0) * 240) % 360;
-                        const alpha = Math.max(0, 0.9 * (1 - (celeb.t || 0)));
-
-                        ctx.fillStyle = `hsla(${hue}, 98%, 62%, ${alpha})`;
-                        ctx.shadowColor = `hsla(${hue}, 100%, 55%, ${alpha})`;
-                        ctx.shadowBlur = 8;
-
-                        if (i % 2 === 0) {
-                            ctx.beginPath();
-                            for (let s = 0; s < 8; s++) {
-                                const rStar = (s % 2 === 0) ? sz * 1.6 : sz * 0.45;
-                                const ang = (s * Math.PI) / 4 + (celeb.t || 0) * 4;
-                                const sx = px + Math.cos(ang) * rStar;
-                                const sy = py + Math.sin(ang) * rStar;
-                                if (s === 0) ctx.moveTo(sx, sy);
-                                else ctx.lineTo(sx, sy);
-                            }
-                            ctx.closePath();
-                            ctx.fill();
-                        } else {
-                            ctx.beginPath();
-                            ctx.arc(px, py, sz, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
-                    }
-                    ctx.restore();
-                }
-            } else {
-                const P = (typeof getPremiumPalette === 'function') ? getPremiumPalette() : null;
-                const depthCol = (P && P.depth) || '#2e7d32';
-                ctx.setLineDash([]);
+            if (celeb && celebrateActive) {
+                const n = 12;
                 ctx.save();
-                ctx.translate(cx, cy);
-                ctx.scale(bigMode() ? wordScaleX : 1, bigMode() ? wordScaleY : 1);
-                
-                if (isChasingOrDrawing) {
-                    ctx.globalAlpha = 0.85;
+                for (let i = 0; i < n; i++) {
+                    const a = (i / n) * Math.PI * 2 + (celeb.t || 0) * 6.5;
+                    const rr = (0.15 + 0.12 * Math.sin((celeb.t || 0) * 8 + i)) * Math.min(VIEW_W, VIEW_H) * (1 - (celeb.t || 0) * 0.45);
+                    const px = cx + Math.cos(a) * rr + celeb.dx;
+                    const py = cy + Math.sin(a) * rr * 0.72 + celeb.dy;
+                    const sz = Math.max(1.5, (3.8 + 2.2 * Math.sin((celeb.t || 0) * 12 + i)) * (1 - (celeb.t || 0) * 0.3));
+                    const hue = (i * 35 + (celeb.t || 0) * 240) % 360;
+                    const alpha = Math.max(0, 0.9 * (1 - (celeb.t || 0)));
+
+                    ctx.fillStyle = `hsla(${hue}, 98%, 62%, ${alpha})`;
+                    ctx.shadowColor = `hsla(${hue}, 100%, 55%, ${alpha})`;
+                    ctx.shadowBlur = 8;
+
+                    if (i % 2 === 0) {
+                        ctx.beginPath();
+                        for (let s = 0; s < 8; s++) {
+                            const rStar = (s % 2 === 0) ? sz * 1.6 : sz * 0.45;
+                            const ang = (s * Math.PI) / 4 + (celeb.t || 0) * 4;
+                            const sx = px + Math.cos(ang) * rStar;
+                            const sy = py + Math.sin(ang) * rStar;
+                            if (s === 0) ctx.moveTo(sx, sy);
+                            else ctx.lineTo(sx, sy);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                    } else {
+                        ctx.beginPath();
+                        ctx.arc(px, py, sz, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
                 }
-
-                const d = Math.max(3, fontSize * 0.035);
-                ctx.shadowColor = isCompleted ? 'rgba(255, 215, 0, 0.6)' : ((P && P.shadow) || 'rgba(10, 40, 15, 0.35)');
-                ctx.shadowBlur = isCompleted ? fontSize * 0.15 : fontSize * 0.08;
-                ctx.shadowOffsetX = d * 0.4;
-                ctx.shadowOffsetY = d * 0.9;
-
-                ctx.fillStyle = depthCol;
-                ctx.fillText(text, d * 0.5, d * 0.55);
-                ctx.shadowBlur = 0;
-                ctx.shadowOffsetX = 0;
-                ctx.shadowOffsetY = 0;
-                ctx.fillText(text, d * 0.9, d);
-
-                ctx.lineWidth = Math.max(3, fontSize * 0.032);
-                ctx.strokeStyle = '#000000';
-                ctx.strokeText(text, 0, 0);
-
-                const faceGrad = ctx.createLinearGradient(0, -fontSize * 0.42, 0, fontSize * 0.42);
-                if (isCompleted) {
-                    faceGrad.addColorStop(0, '#ffffff');
-                    faceGrad.addColorStop(0.3, (P && P.faceTop) || '#ff94c2');
-                    faceGrad.addColorStop(0.7, (P && P.faceMid) || '#ff5fa2');
-                    faceGrad.addColorStop(1, (P && P.faceBot) || '#e02170');
-                } else {
-                    faceGrad.addColorStop(0, (P && P.faceTop) || '#ff94c2');
-                    faceGrad.addColorStop(0.5, (P && P.faceMid) || '#ff5fa2');
-                    faceGrad.addColorStop(1, (P && P.faceBot) || '#e02170');
-                }
-                ctx.fillStyle = faceGrad;
-                ctx.fillText(text, 0, 0);
                 ctx.restore();
-                adjustWordThickness(ctx, text, cx, cy, fontSize, false);
             }
 
             if (isEditMode) {
@@ -4237,16 +4268,6 @@ const canvas = document.getElementById('traceCanvas');
                     drawZoomView(lp.x, lp.y);
                 }
                 return;
-            }
-
-            tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-            tempCtx.globalCompositeOperation = 'source-over';
-            tempCtx.drawImage(drawCanvas, 0, 0);
-            tempCtx.globalCompositeOperation = 'destination-in';
-            tempCtx.drawImage(maskCanvas, 0, 0);
-
-            if (!_readMode && !isCompleted) {
-                ctx.drawImage(tempCanvas, 0, 0);
             }
 
             if (!_readMode) {
@@ -4575,7 +4596,7 @@ const canvas = document.getElementById('traceCanvas');
     let strokeWidthMul = 0.55;
     try {
         const savedSw = parseFloat(localStorage.getItem('tracing_stroke_width'));
-        if (!isNaN(savedSw) && savedSw >= 0.3 && savedSw <= 1.5) strokeWidthMul = savedSw;
+        if (!isNaN(savedSw) && savedSw >= 0.1 && savedSw <= 2.0) strokeWidthMul = savedSw;
     } catch (e) {}
     const creatureSelectEl = document.getElementById('creatureSelect');
     if (creatureSelectEl) {
@@ -4667,6 +4688,18 @@ const canvas = document.getElementById('traceCanvas');
             autoGuideOn = !autoGuideOn;
             try { localStorage.setItem('tracing_auto_guide', autoGuideOn ? '1' : '0'); } catch (e) {}
             syncAutoGuideUI();
+            if (typeof isReadingMode === 'function' && isReadingMode()) {
+                if (autoGuideOn) {
+                    setStatus('📖 ऑटो रीडिंग: एक-एक कर सभी वर्ण चल रहे हैं…');
+                    startWakeAnim();
+                    if (typeof speakCurrentChar === 'function') speakCurrentChar(true);
+                    if (typeof scheduleReadingAutoNext === 'function') scheduleReadingAutoNext();
+                } else {
+                    if (typeof stopReadingAuto === 'function') stopReadingAuto();
+                    setStatus('📖 रीडिंग — टैप / अगला: सुनें');
+                }
+                return;
+            }
             if (autoGuideOn && !isEditMode && !isCompleted && strokes.length > 0) {
                 startAutoGuideDemo();
             } else {
@@ -4729,10 +4762,10 @@ const canvas = document.getElementById('traceCanvas');
             return;
         }
         const speedMul = (typeof creatureSpeedMul === 'number') ? creatureSpeedMul : 1;
-        const chunk = Math.max(2, Math.floor(path.length / (22 / Math.max(0.4, speedMul))));
+        const chunk = Math.max(1, Math.floor(path.length / (75 / Math.max(0.35, speedMul))));
         const next = Math.min(path.length - 1, laserPoint + chunk);
         // green progress
-        drawCtx.lineWidth = unitPx() * 0.16 * (typeof strokeWidthMul === 'number' ? strokeWidthMul : 0.55);
+        drawCtx.lineWidth = getTraceBrushWidth();
         drawCtx.lineCap = 'round';
         drawCtx.lineJoin = 'round';
         drawCtx.strokeStyle = (typeof getPremiumProgressColor === 'function' ? getPremiumProgressColor() : '#ffb300');
@@ -4754,9 +4787,9 @@ const canvas = document.getElementById('traceCanvas');
             laserTrail = [];
             laserStroke++;
             laserPoint = 0;
-            laserTimer = setTimeout(stepLaserAuto, 420);
+            laserTimer = setTimeout(stepLaserAuto, 650);
         } else {
-            laserTimer = setTimeout(stepLaserAuto, Math.max(16, Math.round(28 / Math.max(0.4, speedMul))));
+            laserTimer = setTimeout(stepLaserAuto, Math.max(24, Math.round(52 / Math.max(0.35, speedMul))));
         }
     }
     function drawLaserTrailAndTip() {
@@ -4830,13 +4863,49 @@ const canvas = document.getElementById('traceCanvas');
         ctx.restore();
         ctx.restore();
     }
+    let readingAutoTimer = null;
+    function stopReadingAuto() {
+        if (readingAutoTimer) {
+            clearTimeout(readingAutoTimer);
+            readingAutoTimer = null;
+        }
+    }
+    function scheduleReadingAutoNext() {
+        stopReadingAuto();
+        if (isEditMode || !(typeof isReadingMode === 'function' && isReadingMode())) return;
+        if (!laserAutoOn && !autoGuideOn) return;
+        const speedMul = (typeof creatureSpeedMul === 'number') ? creatureSpeedMul : 1;
+        const delay = Math.max(1400, Math.round(2800 / Math.max(0.4, speedMul)));
+        readingAutoTimer = setTimeout(() => {
+            readingAutoTimer = null;
+            if (isEditMode || !(typeof isReadingMode === 'function' && isReadingMode())) return;
+            if (!laserAutoOn && !autoGuideOn) return;
+            const chars = categories[currentCategory];
+            if (!chars || !chars.length) return;
+            currentIndex = (currentIndex + 1) % chars.length;
+            setupCharacter();
+        }, delay);
+    }
+
     if (laserAutoToggleBtn) {
         syncLaserAutoUI();
         laserAutoToggleBtn.addEventListener('click', () => {
             laserAutoOn = !laserAutoOn;
             try { localStorage.setItem('tracing_laser_auto', laserAutoOn ? '1' : '0'); } catch (e) {}
             syncLaserAutoUI();
-            if (laserAutoOn && !isEditMode && !isCompleted && strokes.length > 0) {
+            if (typeof isReadingMode === 'function' && isReadingMode()) {
+                if (laserAutoOn) {
+                    setStatus('📖 ऑटो रीडिंग: एक-एक कर सभी वर्ण चल रहे हैं…');
+                    startWakeAnim();
+                    if (typeof speakCurrentChar === 'function') speakCurrentChar(true);
+                    scheduleReadingAutoNext();
+                } else {
+                    stopReadingAuto();
+                    setStatus('📖 रीडिंग — टैप / अगला: सुनें');
+                }
+                return;
+            }
+            if (laserAutoOn && !isEditMode && strokes.length > 0) {
                 startLaserAuto();
             } else {
                 stopLaserAuto();
@@ -4881,8 +4950,20 @@ const canvas = document.getElementById('traceCanvas');
                     drawCtx.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
                 }
             } catch (e) {}
-            try { if (typeof setStatus === 'function') setStatus('📖 रीडिंग मोड — टैप करें, सुनें'); } catch (e) {}
+            try {
+                if (typeof setStatus === 'function') {
+                    setStatus((laserAutoOn || autoGuideOn) ? '📖 ऑटो रीडिंग: एक-एक कर सभी वर्ण चल रहे हैं…' : '📖 रीडिंग मोड — टैप करें, सुनें');
+                }
+            } catch (e) {}
+            try {
+                if (typeof VIEW_W === 'number' && VIEW_W > 10 && (laserAutoOn || autoGuideOn) && typeof scheduleReadingAutoNext === 'function') {
+                    startWakeAnim();
+                    if (typeof speakCurrentChar === 'function') speakCurrentChar(true);
+                    scheduleReadingAutoNext();
+                }
+            } catch (e) {}
         } else {
+            try { if (typeof stopReadingAuto === 'function') stopReadingAuto(); } catch (e) {}
             // केवल जब कैनवास तैयार हो (init पर मत चलाओ)
             try {
                 if (typeof VIEW_W === 'number' && VIEW_W > 10 && typeof setupCharacter === 'function') {
@@ -5089,10 +5170,10 @@ const canvas = document.getElementById('traceCanvas');
             return;
         }
         // advance a chunk of points
-        const chunk = Math.max(2, Math.floor(path.length / 18));
+        const chunk = Math.max(1, Math.floor(path.length / 48));
         const next = Math.min(path.length - 1, autoGuidePoint + chunk);
         // paint progressive segment on draw canvas (green guide)
-        drawCtx.lineWidth = unitPx() * 0.16 * (typeof strokeWidthMul === 'number' ? strokeWidthMul : 0.55);
+        drawCtx.lineWidth = getTraceBrushWidth();
         drawCtx.lineCap = 'round';
         drawCtx.lineJoin = 'round';
         drawCtx.strokeStyle = (typeof getPremiumProgressColor === 'function' ? getPremiumProgressColor() : '#ffb300');
@@ -5188,20 +5269,35 @@ const canvas = document.getElementById('traceCanvas');
     }
 
     const strokeWidthSelect = document.getElementById('strokeWidthSelect');
-    if (strokeWidthSelect) {
-        strokeWidthSelect.value = String(strokeWidthMul);
-        // अगर वैल्यू ऑप्शन में न हो तो नज़दीकी चुनें
-        if (strokeWidthSelect.value !== String(strokeWidthMul)) {
+    const drawBrushSizeRange = document.getElementById('drawBrushSizeRange');
+    const drawBrushSizeVal = document.getElementById('drawBrushSizeVal');
+    function syncDrawBrushUI() {
+        if (drawBrushSizeRange) drawBrushSizeRange.value = String(strokeWidthMul);
+        if (drawBrushSizeVal) drawBrushSizeVal.textContent = strokeWidthMul.toFixed(2).replace(/\.00$/, '.0') + '×';
+        const dtRange = document.getElementById('drawThickRange');
+        if (dtRange) dtRange.value = String(strokeWidthMul);
+        if (strokeWidthSelect) {
             const opts = Array.from(strokeWidthSelect.options).map(o => parseFloat(o.value));
             let best = opts[0], bd = Math.abs(opts[0] - strokeWidthMul);
             opts.forEach(v => { const d = Math.abs(v - strokeWidthMul); if (d < bd) { bd = d; best = v; } });
-            strokeWidthMul = best;
             strokeWidthSelect.value = String(best);
         }
-        strokeWidthSelect.addEventListener('change', () => {
-            strokeWidthMul = parseFloat(strokeWidthSelect.value) || 0.55;
-            try { localStorage.setItem('tracing_stroke_width', String(strokeWidthMul)); } catch (e) {}
-        });
+    }
+    function applyNewStrokeWidth(val) {
+        strokeWidthMul = Math.max(0.1, Math.min(2.0, parseFloat(val) || 0.55));
+        try { localStorage.setItem('tracing_stroke_width', String(strokeWidthMul)); } catch (e) {}
+        syncDrawBrushUI();
+        if (!isEditMode && !isCompleted && typeof redrawGreenProgress === 'function') {
+            try { redrawGreenProgress(); } catch (e) {}
+        }
+    }
+    syncDrawBrushUI();
+    if (drawBrushSizeRange) {
+        drawBrushSizeRange.addEventListener('input', () => applyNewStrokeWidth(drawBrushSizeRange.value));
+        drawBrushSizeRange.addEventListener('change', () => applyNewStrokeWidth(drawBrushSizeRange.value));
+    }
+    if (strokeWidthSelect) {
+        strokeWidthSelect.addEventListener('change', () => applyNewStrokeWidth(strokeWidthSelect.value));
     }
 
     function drawBug(x, y, ang, s, ph, old) {
@@ -5740,7 +5836,7 @@ const canvas = document.getElementById('traceCanvas');
         if (zoomMode === 'off') return;
         const text = categories[currentCategory][currentIndex];
         ctx.save();
-        ctx.font = `${getFontSize(text)}px sans-serif`;
+        ctx.font = `900 ${getFontSize(text)}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const m = ctx.measureText(text);
@@ -6121,7 +6217,7 @@ const canvas = document.getElementById('traceCanvas');
 
     // हरा प्रगति-रास्ता दोबारा बनाएँ (पूरे हुए हिस्से + इस हिस्से का वर्तमान बिंदु तक)
     function paintGreenPath(path, upto) {
-        drawCtx.lineWidth = unitPx() * 0.16 * (typeof strokeWidthMul === 'number' ? strokeWidthMul : 0.55);
+        drawCtx.lineWidth = getTraceBrushWidth();
         drawCtx.lineCap = 'round';
         drawCtx.lineJoin = 'round';
         drawCtx.strokeStyle = (typeof getPremiumProgressColor === 'function' ? getPremiumProgressColor() : '#ffb300');
@@ -6155,7 +6251,11 @@ const canvas = document.getElementById('traceCanvas');
             return;
         }
 
-        if (isCompleted) return;
+        if (isCompleted) {
+            startCelebrate();
+            if (typeof speakCurrentChar === 'function') speakCurrentChar(true);
+            return;
+        }
         // user takes over — stop auto demo / laser
         if (autoGuideRunning) stopAutoGuideDemo();
         if (laserAutoRunning) stopLaserAuto();
@@ -6249,7 +6349,7 @@ const canvas = document.getElementById('traceCanvas');
 
         if (bestIdx > currentPointIdx) {
             recordStat(getCharKey(), true);
-            drawCtx.lineWidth = unitPx() * 0.16 * (typeof strokeWidthMul === 'number' ? strokeWidthMul : 0.55);
+            drawCtx.lineWidth = getTraceBrushWidth();
             drawCtx.lineCap = 'round';
             drawCtx.lineJoin = 'round';
             drawCtx.strokeStyle = (typeof getPremiumProgressColor === 'function' ? getPremiumProgressColor() : '#ffb300');
@@ -6366,35 +6466,7 @@ const canvas = document.getElementById('traceCanvas');
         setStatus('आपका एरो सेव हो गया! अब चलाकर देखें ⭐');
     });
 
-    document.getElementById('exportBtn').addEventListener('click', () => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(customStrokesDB));
-        const dlAnchor = document.createElement('a');
-        dlAnchor.setAttribute("href", dataStr);
-        dlAnchor.setAttribute("download", "my_custom_tracing_arrows.json");
-        document.body.appendChild(dlAnchor);
-        dlAnchor.click();
-        dlAnchor.remove();
-    });
 
-    const importFile = document.getElementById('importFile');
-    document.getElementById('importBtn').addEventListener('click', () => importFile.click());
-    importFile.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            try {
-                const imported = JSON.parse(ev.target.result);
-                customStrokesDB = { ...customStrokesDB, ...imported };
-                saveDBToStorage();
-                alert('सफलतापूर्वक लोड हो गया! 🎉');
-                toggleEditMode(false);
-            } catch (err) {
-                alert('त्रुटि!');
-            }
-        };
-        reader.readAsText(file);
-    });
 
     canvas.addEventListener('mousedown', startPosition);
     canvas.addEventListener('mouseup', endPosition);
@@ -6686,7 +6758,7 @@ const canvas = document.getElementById('traceCanvas');
                 if (typeof setStatus === 'function') {
                     setStatus('🔒 2 मिनट लॉक — लिखते रहें, आइकॉन बाद में');
                 }
-            }, 1600);
+            }, 2400);
         }
     }
 
@@ -6949,7 +7021,7 @@ const canvas = document.getElementById('traceCanvas');
         const probe = document.createElement('canvas').getContext('2d');
         let size = Math.floor(Math.min(VIEW_H * 0.85, VIEW_W * 0.9));
         for (let i = 0; i < 400 && size > 10; i++) {
-            probe.font = `${size}px sans-serif`;
+            probe.font = `900 ${size}px sans-serif`;
             const m = probe.measureText(text);
             const w = (m.width + size * 0.12) * wordScaleX;
             const h = ((m.actualBoundingBoxAscent || size * 0.8) + (m.actualBoundingBoxDescent || size * 0.2) + size * 0.12) * wordScaleY;
@@ -7038,9 +7110,13 @@ const canvas = document.getElementById('traceCanvas');
     function adjustWordThickness(c, text, cx, cy, fs, isMask) {
         if (!bigMode() || Math.abs(wordThick - 1) < 0.001) return;
         c.save();
+        c.font = `900 ${fs}px sans-serif`;
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
         c.translate(cx, cy);
         c.scale(bigMode() ? wordScaleX : 1, bigMode() ? wordScaleY : 1);
         c.lineJoin = 'round';
+        c.lineCap = 'round';
         if (wordThick > 1) {
             c.globalCompositeOperation = 'source-over';
             c.strokeStyle = isMask ? '#ffffff' : '#01579b';
@@ -7132,5 +7208,21 @@ const canvas = document.getElementById('traceCanvas');
 </script>
 
 
-    </body>
+    
+<script>
+/* PWA only: register service worker for offline/install. Does not affect tracing logic. */
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  var registerSW = function () {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(function (reg) {
+        if (reg && reg.update) try { reg.update(); } catch (e) {}
+      })
+      .catch(function () {});
+  };
+  if (document.readyState === 'complete') registerSW();
+  else window.addEventListener('load', registerSW);
+})();
+</script>
+</body>
 </html>
